@@ -3,6 +3,7 @@
 * This is the GUI portion of the assignment without any file handling.
 */
 
+// Last edited at 1:08 pm on March 24th by Nicki.
 
 import javafx.application.Application;
 import javafx.scene.Scene;
@@ -21,11 +22,17 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Random;
 import java.lang.NumberFormatException;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileInputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.EOFException;
 
 public class BankingGUI extends Application{
   private Customer accountHolder;
-  private SavingsAccount aSavingsAccount = new SavingsAccount();
-  private ChequingAccount aChequingAccount = new ChequingAccount();
+  private SavingsAccount aSavingsAccount;
+  private ChequingAccount aChequingAccount;
   private double newDeposit = 0;
   private double newWithdrawl = 0;
   private double newTransactionFee = 0;
@@ -42,6 +49,8 @@ public class BankingGUI extends Application{
   private Label invalidDepositWithdraw = new Label ("");
   private String accountType = "";
   private String customerName;
+  private Stage stage;
+  private Scene scene3;
   public final int hBoxWidth = 6;
   public final int vBoxWidth = 30;
   public final int groupHeight = 300;
@@ -71,7 +80,7 @@ public class BankingGUI extends Application{
     userNewAccountHolder();
     aChequingAccount = new ChequingAccount(accountHolder, newStartBalance, newTransactionFee);
     accountBalance = aChequingAccount.getBalance();
-    System.out.println("New chequin account " + "accountHolder " + accountHolder + "newTransactionFee" + newTransactionFee + "newStartBalance"+ newStartBalance);
+    System.out.println("New chequing account " + "accountHolder " + accountHolder + "newTransactionFee" + newTransactionFee + "newStartBalance"+ newStartBalance);
   }
 
   /**
@@ -183,14 +192,107 @@ public class BankingGUI extends Application{
     invalidDepositWithdraw.setText("Invalid entry. Please enter it as a numerical number.");
   }
 
+
+  public void readFromFile(String theFileName){
+    String fileName = theFileName;
+    ObjectInputStream inputStream = null;
+    try{
+      inputStream = new ObjectInputStream(new FileInputStream(fileName));
+    }catch(IOException e){
+      System.out.println("Error opening output file"+fileName);
+    }
+    ChequingAccount readOne = null;
+    SavingsAccount readTwo = null;
+
+    try{
+      readTwo = (SavingsAccount)inputStream.readObject();
+      if(readTwo!=null){
+        aSavingsAccount = readTwo;
+        accountType = "Savings Account";
+        System.out.println("We have a savings account.");
+        Customer aGuy = aSavingsAccount.getCustomer();
+        accountHolder = aGuy;
+        accountBalance = aSavingsAccount.getBalance();
+        updateAccountLabels();
+        System.out.println(accountBalance);
+        System.out.println(aGuy.toString());
+
+      }
+      readOne = (ChequingAccount)inputStream.readObject();
+      if(readOne!=null){
+        aChequingAccount = readOne;
+          accountType = "Chequing Account";
+          System.out.println("We have a chequing account.");
+          Customer aGuy = aChequingAccount.getCustomer();
+          accountHolder = aGuy;
+          accountBalance = aChequingAccount.getBalance();
+          updateAccountLabels();
+          System.out.println(accountBalance);
+          System.out.println(aGuy.toString());
+      }
+
+
+      System.out.println("End of reading from file.");
+      inputStream.close();
+
+      System.out.println();
+    }catch(FileNotFoundException e){
+      System.out.println("Problem opening file"+ fileName);
+    }catch(EOFException e){
+      System.out.println("Problem reading1 the file" + fileName);
+    }catch(IOException e){
+      System.out.println("Problem reading2 the file" + fileName);
+    }catch(ClassNotFoundException e){
+      System.out.println("Class was not found");
+    }
+  }
+  public void writeToFile(String theFileName){
+    String fileName = theFileName;
+    ObjectOutputStream outputStream = null;
+    try{
+      outputStream = new ObjectOutputStream(new FileOutputStream(fileName));
+    }catch(IOException e){
+      System.out.println("Error opening output file" + fileName);
+    }try{
+      outputStream.writeObject(aSavingsAccount);
+      outputStream.writeObject(aChequingAccount);
+      outputStream.close();
+    }catch(FileNotFoundException e){
+      System.out.println("Problem opening the file" + fileName);
+    }catch(IOException e){
+      System.out.println("Problem with output to file"+ fileName);
+    }
+  }
+  /**
+  * Start method.
+  */
   public void start(Stage primaryStage){
+    stage = primaryStage;
+    String fileName = "bankAccount.records";
+    File fileObject = new File(fileName);
+    boolean exists = false;
+    if(!fileObject.exists()){
+      System.out.println("No file by that name.");
+    }else{
+      System.out.println("File exists.");
+      exists = true;
+    }
+    if(!fileObject.canRead()){
+      System.out.println("Not allowed to read the file.");
+    }else{
+      System.out.println("File is readable.");
+    }
+    // If the file exists, read from it.
+    if(exists == true){
+      readFromFile(fileName);
 
-
+    // If the file does not exist, create it and write to it.
+  }
 
     //First screen
     //VBox for the first scene
     VBox accountCreationVBox = new VBox(vBoxWidth/2);
-    TextField fileField = new TextField(".txt file");
+    TextField fileField = new TextField("Name of a file that exists");
     Button submitFile = new Button("Submit file name");
     HBox accountCreationHBox = new HBox(hBoxWidth);
     accountCreationHBox.getChildren().addAll(submitFile, fileField);
@@ -254,11 +356,13 @@ public class BankingGUI extends Application{
               accountBalance = aSavingsAccount.getBalance();
               setBalanceLabel(accountBalance);
               updateValidDepositWithdraw();
+              writeToFile(fileName);
             } else{
               aChequingAccount.deposit(amount);
               accountBalance = aChequingAccount.getBalance();
               setBalanceLabel(accountBalance);
               updateValidDepositWithdraw();
+              writeToFile(fileName);
             }
           } else if ((amount) <= 0){
             updateInvalidDepositWithdrawNumber();
@@ -284,11 +388,13 @@ public class BankingGUI extends Application{
               accountBalance = aSavingsAccount.getBalance();
               setBalanceLabel(accountBalance);
               updateValidDepositWithdraw();
+              writeToFile(fileName);
             } else{
               aChequingAccount.withdraw(amount);
               accountBalance = aChequingAccount.getBalance();
               setBalanceLabel(accountBalance);
               updateValidDepositWithdraw();
+              writeToFile(fileName);
             }
           }else if ((amount) <= 0){
               updateInvalidDepositWithdrawNumber();
@@ -361,18 +467,20 @@ public class BankingGUI extends Application{
     // create the second scene
     Scene scene2 = new Scene(borderPane2, groupWidth, groupHeight);
 
-    // create a third scene
-    Scene scene3 = new Scene(borderPane3, groupWidth, groupHeight);
+    // set up a third scene
+    scene3 = new Scene(borderPane3, groupWidth, groupHeight);
 
-    /**
-    * Button action to submit the name of a .txt file.
+    /*
+    *Button action to submit the name of a .txt file.
     */
     submitFile.setOnAction(new EventHandler<ActionEvent>(){
       @Override
       public void handle(ActionEvent event){
         String file = fileField.getText();
-        /* try to get banking information from a file the user might provide.
-        Adapted from CPSC 219 ReadMe.java example. */
+        readFromFile(file);
+        primaryStage.setScene(scene3);
+        /*//try to get banking information from a file the user might provide.
+        Adapted from CPSC 219 ReadMe.java example.
         try{
           BufferedReader bankingfile = new BufferedReader(new FileReader(file + ".txt"));
           String line = bankingfile.readLine();
@@ -382,11 +490,9 @@ public class BankingGUI extends Application{
           primaryStage.setScene(scene2);
         }catch (FileNotFoundException e){
           errorFileLabel.setText("The file "+ file+".txt"+ " does not exist.");
-
         }catch (IOException e){
           errorFileLabel.setText("The file "+ file+".txt"+ " is the wrong format.");
-        }
-
+        }*/
       }
     });
 
@@ -397,6 +503,7 @@ public class BankingGUI extends Application{
       @Override
       public void handle(ActionEvent event){
         updateAccountTypeSavings();
+        accountType = "Savings Account";
         primaryStage.setScene(scene2);
       }
     });
@@ -408,6 +515,7 @@ public class BankingGUI extends Application{
       @Override
       public void handle(ActionEvent event){
         updateAccountTypeChequing();
+        accountType = "Chequing Account";
         settransactionFeeHBox();
         primaryStage.setScene(scene2);
       }
@@ -424,10 +532,16 @@ public class BankingGUI extends Application{
           // generate random number between 0 and 8999 then add 1000 to get between 1000 and 9999.
           int id = random.nextInt(8999) + 1000;
           newStartBalance = Double.parseDouble(startBalanceField.getText());
+          newStartBalance = Double.parseDouble(startBalanceField.getText());
+
+
           primaryStage.setScene(scene3);
           setAccountHolder(customerNameField.getText(), id);
           userSetSavingsAccount();
           updateAccountLabels();
+          writeToFile("bankAccount.records");
+          aSavingsAccount.getCustomer().toString();
+          System.out.println("Savings account written to file.");
         } else if(accountType.equals("Chequing Account")){
           //https://stackoverflow.com/questions/32534601/java-gettting-a-random-number-from-100-to-999
           Random random = new Random();
@@ -439,13 +553,19 @@ public class BankingGUI extends Application{
           setAccountHolder(customerNameField.getText(), id);
           userSetChequingAccount();
           updateAccountLabels();
+          writeToFile("bankAccount.records");
+          System.out.println("Chequing account written to file.");
         }
       }
     });
 
 
     primaryStage.setTitle("Banking GUI");
-    primaryStage.setScene(scene1);
+    if(exists==false){
+      primaryStage.setScene(scene1);
+    }else{
+      primaryStage.setScene(scene3);
+    }
     primaryStage.show();
 
   }
