@@ -23,10 +23,9 @@ import java.io.IOException;
 import java.util.Random;
 import java.lang.NumberFormatException;
 import java.io.File;
-import java.io.FileOutputStream;
+import java.io.BufferedWriter;
 import java.io.FileInputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.FileWriter;
 import java.io.EOFException;
 
 public class BankingGUI extends Application{
@@ -41,7 +40,6 @@ public class BankingGUI extends Application{
   private Label statBalance = new Label("");
   private Label errorFileLabel = new Label("");
   private Label titleLabel = new Label("");
-  private double newStartBalance = 0.0;
   private Label accountHolderName= new Label("");// = new Label
   private Label accountHolderID = new Label("");// = new Label("Account ID: " );//+ accountHolder.getID());
   private Label transactionFeeLabel = new Label("");
@@ -51,6 +49,7 @@ public class BankingGUI extends Application{
   private String customerName;
   private Stage stage;
   private Scene scene3;
+  private int id;
   public final int hBoxWidth = 6;
   public final int vBoxWidth = 30;
   public final int groupHeight = 300;
@@ -67,9 +66,9 @@ public class BankingGUI extends Application{
   public void userSetSavingsAccount(){
 
     userNewAccountHolder();
-    aSavingsAccount = new SavingsAccount(accountHolder, newStartBalance);
+    aSavingsAccount = new SavingsAccount(accountHolder, accountBalance);
     accountBalance = aSavingsAccount.getBalance();
-    System.out.println("New savings account " + "accountHolder " + accountHolder + "newStartBalance" + newStartBalance);
+    System.out.println("New savings account " + "accountHolder " + accountHolder + "accountBalance" + accountBalance);
   }
 
   /**
@@ -78,9 +77,9 @@ public class BankingGUI extends Application{
   public void userSetChequingAccount(){
 
     userNewAccountHolder();
-    aChequingAccount = new ChequingAccount(accountHolder, newStartBalance, newTransactionFee);
+    aChequingAccount = new ChequingAccount(accountHolder, accountBalance, newTransactionFee);
     accountBalance = aChequingAccount.getBalance();
-    System.out.println("New chequing account " + "accountHolder " + accountHolder + "newTransactionFee" + newTransactionFee + "newStartBalance"+ newStartBalance);
+    System.out.println("New chequing account " + "accountHolder " + accountHolder + "newTransactionFee" + newTransactionFee + "accountBalance"+ accountBalance);
   }
 
   /**
@@ -96,7 +95,7 @@ public class BankingGUI extends Application{
     newAccountVBox.getChildren().addAll(customerNameText, newAccountButton);
     /*System.out.println("Enter a customer Name: ");
     Scanner keyName = new Scanner(System.in);
-    name = keyName.next() +" "+keyName.next();*/
+    name = keyName.next() +" "+keyName.next().trim();*/
 
     /**
     * Method to handle the user submitting a new customer name.
@@ -151,6 +150,8 @@ public class BankingGUI extends Application{
     accountHolderName.setFont(Font.font("Verdana", FontWeight.BOLD,s1FontSize));
     accountHolderID.setFont(Font.font("Verdana", FontWeight.BOLD, s1FontSize));
     statBalance.setFont(Font.font("Verdana", FontWeight.BOLD, s1FontSize));
+    transactionFeeLabel.setText("Transaction Fee: "+ newTransactionFee);
+    transactionFeeLabel.setFont(Font.font("Verdana", FontWeight.BOLD, s1FontSize));
   }
 
   /**
@@ -166,9 +167,9 @@ public class BankingGUI extends Application{
   * Method to update the balance label.
   */
   public void settransactionFeeHBox(){
-      transactionFeeLabel.setText("Transaction Fee: ");
-      transactionFeeHBox.getChildren().addAll(transactionFeeLabel, transactionFeeField);
-      transactionFeeField.setPrefWidth(textFieldWidth*2);
+    transactionFeeLabel.setText("Transaction Fee: ");
+    transactionFeeHBox.getChildren().addAll(transactionFeeLabel, transactionFeeField);
+    transactionFeeField.setPrefWidth(textFieldWidth*2);
   }
 
   /**
@@ -195,28 +196,65 @@ public class BankingGUI extends Application{
 
   public void readFromFile(String theFileName){
     String fileName = theFileName;
-    ObjectInputStream inputStream = null;
+    //ObjectInputStream inputStream = null;
     try{
-      inputStream = new ObjectInputStream(new FileInputStream(fileName));
+      //inputStream = new ObjectInputStream(new FileInputStream(fileName));
+      Scanner reader = new Scanner(new FileInputStream(fileName));
     }catch(IOException e){
       System.out.println("Error opening output file"+fileName);
     }
-    ChequingAccount readOne = null;
-    SavingsAccount readTwo = null;
+    //ChequingAccount readOne = null;
+    //SavingsAccount readTwo = null;
 
     try{
-      readTwo = (SavingsAccount)inputStream.readObject();
-      if(readTwo!=null){
-        aSavingsAccount = readTwo;
-        accountType = "Savings Account";
-        System.out.println("We have a savings account.");
-        Customer aGuy = aSavingsAccount.getCustomer();
-        accountHolder = aGuy;
-        accountBalance = aSavingsAccount.getBalance();
+      Scanner reader = new Scanner(new FileInputStream(fileName));
+      reader.useDelimiter(":|; ");
+      String line = reader.next().trim();
+      line = reader.next().trim();
+      //readTwo = (SavingsAccount)inputStream.readObject();
+      if (line.equals("Savings Account")){
+        System.out.println(line);
+        accountType = line;
+        line = reader.next().trim();
+        line = reader.next().trim();
+        System.out.println(line);
+        String line2 = reader.next().trim();
+        int lineID = Integer.parseInt(reader.next().trim()); //https://stackoverflow.com/questions/23851668/converting-a-string-with-spaces-to-an-integer-in-java
+        System.out.println(line2);
+        accountHolder =new Customer((line+""), lineID);
+        //id = Integer.parseInt(line);;
+        line = reader.next().trim();
+        line = reader.next().trim();
+        System.out.println(line);
+        accountBalance = Double.parseDouble(line);
         updateAccountLabels();
-        System.out.println(accountBalance);
-        System.out.println(aGuy.toString());
+        userSetSavingsAccount();
+      } else if (line.equals("Chequing Account")){
+        System.out.println(line);
+        accountType = line;
+        line = reader.next().trim();
+        line = reader.next().trim();
+        System.out.println(line);
+        String line2 = reader.next().trim();
+        int lineID = Integer.parseInt(reader.next().trim()); //https://stackoverflow.com/questions/23851668/converting-a-string-with-spaces-to-an-integer-in-java
+        System.out.println(line2);
+        accountHolder =new Customer((line+""), lineID);
+        //id = Integer.parseInt(line);;
+        line = reader.next().trim();
+        line = reader.next().trim();
+        System.out.println(line);
+        accountBalance = Double.parseDouble(line);
+        line = reader.next().trim();
+        line = reader.next().trim();
+        System.out.println(line);
+        newTransactionFee = Double.parseDouble(line);
+        userSetChequingAccount();
+        settransactionFeeHBox();
+        updateAccountLabels();
+        System.out.println("accountType"+accountType+"accountHolder" +accountHolder+ "accountBalance"+accountBalance);
 
+      }
+/*
       }
       readOne = (ChequingAccount)inputStream.readObject();
       if(readOne!=null){
@@ -231,32 +269,45 @@ public class BankingGUI extends Application{
           System.out.println(aGuy.toString());
       }
 
-
+*/
       System.out.println("End of reading from file.");
-      inputStream.close();
+      reader.close();
 
       System.out.println();
     }catch(FileNotFoundException e){
       System.out.println("Problem opening file"+ fileName);
-    }catch(EOFException e){
+    }/*catch(EOFException e){
       System.out.println("Problem reading1 the file" + fileName);
     }catch(IOException e){
       System.out.println("Problem reading2 the file" + fileName);
     }catch(ClassNotFoundException e){
       System.out.println("Class was not found");
-    }
+    }*/
   }
   public void writeToFile(String theFileName){
     String fileName = theFileName;
-    ObjectOutputStream outputStream = null;
+  //  ObjectOutputStream outputStream = null;
     try{
-      outputStream = new ObjectOutputStream(new FileOutputStream(fileName));
+    //outputStream = new ObjectOutputStream(new FileOutputStream(fileName));
+      BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));
     }catch(IOException e){
       System.out.println("Error opening output file" + fileName);
     }try{
-      outputStream.writeObject(aSavingsAccount);
-      outputStream.writeObject(aChequingAccount);
-      outputStream.close();
+      BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));
+      if(accountType.equals("Savings Account")||accountType.equals(" Savings Account")){
+        writer.write("Type: " +accountType+": ");
+    //  writer.write(id+"");
+      writer.write(accountHolder+": ");
+      writer.write("Balance:" +accountBalance+": ");
+    }else if (accountType.equals("Chequing Account")||accountType.equals(" Chequing Account")){
+      writer.write("Type: " +accountType+": ");
+      //writer.write(id+"");
+      writer.write(accountHolder+": ");
+      writer.write("Balance: " +accountBalance+": ");
+      writer.write("Transaction Fee: "+newTransactionFee+": ");
+    }
+      //writer.write(aChequingAccount);
+      writer.close();
     }catch(FileNotFoundException e){
       System.out.println("Problem opening the file" + fileName);
     }catch(IOException e){
@@ -268,7 +319,7 @@ public class BankingGUI extends Application{
   */
   public void start(Stage primaryStage){
     stage = primaryStage;
-    String fileName = "bankAccount.records";
+    String fileName = "bankAccount.txt";
     File fileObject = new File(fileName);
     boolean exists = false;
     if(!fileObject.exists()){
@@ -351,7 +402,7 @@ public class BankingGUI extends Application{
         try{
           amount = (Double.parseDouble(entry.getText()));
           if(amount> 0){
-            if(accountType.equals("Savings Account")){
+            if(accountType.equals("Savings Account") || accountType.equals(" Savings Account")){
               aSavingsAccount.deposit(amount);
               accountBalance = aSavingsAccount.getBalance();
               setBalanceLabel(accountBalance);
@@ -383,7 +434,7 @@ public class BankingGUI extends Application{
         try{
           amount = (Double.parseDouble(entry.getText()));
           if(amount> 0){
-            if(accountType.equals("Savings Account")){
+            if(accountType.equals("Savings Account")|| accountType.equals(" Savings Account")){
               aSavingsAccount.withdraw(amount);
               accountBalance = aSavingsAccount.getBalance();
               setBalanceLabel(accountBalance);
@@ -503,7 +554,7 @@ public class BankingGUI extends Application{
       @Override
       public void handle(ActionEvent event){
         updateAccountTypeSavings();
-        accountType = "Savings Account";
+      //  accountType = "Savings Account";
         primaryStage.setScene(scene2);
       }
     });
@@ -515,7 +566,7 @@ public class BankingGUI extends Application{
       @Override
       public void handle(ActionEvent event){
         updateAccountTypeChequing();
-        accountType = "Chequing Account";
+        //accountType = "Chequing Account";
         settransactionFeeHBox();
         primaryStage.setScene(scene2);
       }
@@ -530,16 +581,16 @@ public class BankingGUI extends Application{
           //https://stackoverflow.com/questions/32534601/java-gettting-a-random-number-from-100-to-999
           Random random = new Random();
           // generate random number between 0 and 8999 then add 1000 to get between 1000 and 9999.
-          int id = random.nextInt(8999) + 1000;
-          newStartBalance = Double.parseDouble(startBalanceField.getText());
-          newStartBalance = Double.parseDouble(startBalanceField.getText());
+          id = random.nextInt(8999) + 1000;
+          accountBalance = Double.parseDouble(startBalanceField.getText());
+          accountBalance = Double.parseDouble(startBalanceField.getText());
 
 
           primaryStage.setScene(scene3);
           setAccountHolder(customerNameField.getText(), id);
           userSetSavingsAccount();
           updateAccountLabels();
-          writeToFile("bankAccount.records");
+          writeToFile("bankAccount.txt");
           aSavingsAccount.getCustomer().toString();
           System.out.println("Savings account written to file.");
         } else if(accountType.equals("Chequing Account")){
@@ -547,13 +598,14 @@ public class BankingGUI extends Application{
           Random random = new Random();
           // generate random number between 0 and 8999 then add 1000 to get between 1000 and 9999.
           int id = random.nextInt(8999) + 1000;
-          newStartBalance = Double.parseDouble(startBalanceField.getText());
+          accountBalance = Double.parseDouble(startBalanceField.getText());
           newTransactionFee = Double.parseDouble(transactionFeeField.getText());
           primaryStage.setScene(scene3);
           setAccountHolder(customerNameField.getText(), id);
+          updateAccountTypeChequing();
           userSetChequingAccount();
           updateAccountLabels();
-          writeToFile("bankAccount.records");
+          writeToFile("bankAccount.txt");
           System.out.println("Chequing account written to file.");
         }
       }
